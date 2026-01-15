@@ -1,0 +1,69 @@
+# Project Configuration
+project:
+  name: "Climate Change Visualization Dashboard"
+  version: "1.0.0"
+  author: "Climate Analytics Team"
+  
+# Data Settings
+data:
+  source: "synthetic"  # Options: synthetic, noaa, berkeley, custom
+  synthetic:
+    start_year: 1850
+    end_year: 2023
+    countries: ["USA", "CHN", "IND", "EU27", "RUS", "BRA", "JPN", "AUS", "CAN", "MEX"]
+    random_seed: null  # Set to integer for reproducibility
+  
+# Dashboard Settings
+dashboard:
+  figure_size: [24, 18]
+  dpi: 300
+  save_format: "png"
+  animation:
+    fps: 10
+    duration: 15
+    save_format: "gif"
+  
+# Visualization Settings
+visualizations:
+  spiral:
+    colormap: "RdBu_r"
+    anomaly_range: [-2, 2]
+    show_decades: true
+  heatmap:
+    colormap: "viridis"
+    interpolation: "nearest"
+  sankey:
+    year: 2020
+    show_flows: true
+  
+# Style Settings
+style:
+  theme: "seaborn-v0_8-whitegrid"
+  fonts:
+    title:
+      family: "DejaVu Sans"
+      size: 16
+      weight: "bold"
+    axis:
+      family: "DejaVu Sans"
+      size: 10
+    annotation:
+      family: "DejaVu Sans"
+      size: 8
+  colors:
+    temperature:
+      sequential: ["#053061", "#2166ac", "#4393c3", "#92c5de", "#d1e5f0", 
+                   "#f7f7f7", "#fddbc7", "#f4a582", "#d6604d", "#b2182b", "#67001f"]
+      diverging: "RdBu_r"
+    emissions:
+      co2: "#FF6B35"
+      ch4: "#C73E3A"
+      n2o: "#6A0572"
+    continents:
+      Africa: "#FFBE0B"
+      Asia: "#FB5607"
+      Europe: "#8338EC"
+      North America: "#3A86FF"
+      South America: "#06D6A0"
+      Oceania: "#118AB2"
+      Antarctica: "#9B5DE5"
