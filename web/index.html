@@ -1,0 +1,1425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Climate Dynamics Dashboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        }
+
+        :root {
+            --bg-offwhite: #F8F9FA;
+            --deep-navy: #1A365D;
+            --slate-blue: #2D3748;
+            --cyan: #00B5D8;
+            --teal: #38B2AC;
+            --light-grey: #E2E8F0;
+            --medium-grey: #CBD5E0;
+            --dark-grey: #4A5568;
+            --white: #FFFFFF;
+            --graph-1: #3182CE;
+            --graph-2: #38A169;
+            --graph-3: #D69E2E;
+            --graph-4: #805AD5;
+            --temp-hot: #FF6B6B;
+            --temp-cool: #4D96FF;
+            --co2-high: #C53030;
+            --ice-blue: #90E0EF;
+        }
+
+        body {
+            background-color: var(--bg-offwhite);
+            color: var(--slate-blue);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        /* Navigation */
+        nav {
+            background-color: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 2px 20px rgba(26, 54, 93, 0.1);
+            position: fixed;
+            width: 100%;
+            top: 0;
+            z-index: 1000;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s ease;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--deep-navy);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .logo i {
+            color: var(--cyan);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2.5rem;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: var(--slate-blue);
+            font-weight: 600;
+            transition: all 0.3s;
+            padding: 0.5rem 0;
+            position: relative;
+            font-size: 0.95rem;
+        }
+
+        .nav-links a:hover {
+            color: var(--cyan);
+        }
+
+        .nav-links a.active::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: linear-gradient(90deg, var(--cyan), var(--teal));
+            border-radius: 2px;
+        }
+
+        .github-btn {
+            background: linear-gradient(135deg, var(--deep-navy), #2D3748);
+            color: white;
+            padding: 0.6rem 1.8rem;
+            border-radius: 25px;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(26, 54, 93, 0.2);
+        }
+
+        .github-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(26, 54, 93, 0.3);
+        }
+
+        /* Hero Section */
+        .hero-section {
+            margin-top: 80px;
+            height: 85vh;
+            display: flex;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+            padding: 0 5%;
+            background: linear-gradient(135deg, #f0f7ff 0%, #e6f0ff 100%);
+        }
+
+        .hero-content {
+            flex: 1;
+            z-index: 10;
+            max-width: 650px;
+        }
+
+        .hero-title {
+            font-size: 3.8rem;
+            font-weight: 900;
+            line-height: 1.1;
+            margin-bottom: 1.5rem;
+            color: var(--deep-navy);
+            background: linear-gradient(135deg, var(--deep-navy), var(--cyan));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero-subtitle {
+            font-size: 1.25rem;
+            color: var(--dark-grey);
+            margin-bottom: 2rem;
+            max-width: 550px;
+            line-height: 1.8;
+        }
+
+        .hero-stats {
+            display: flex;
+            gap: 2rem;
+            margin: 2rem 0;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: var(--cyan);
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: var(--dark-grey);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .hero-cta {
+            display: flex;
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .btn {
+            padding: 1rem 2.5rem;
+            border-radius: 50px;
+            font-weight: 700;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.75rem;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            cursor: pointer;
+            border: none;
+            font-size: 1rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--cyan), var(--teal));
+            color: white;
+            box-shadow: 0 8px 25px rgba(0, 181, 216, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-3px) scale(1.05);
+            box-shadow: 0 15px 35px rgba(0, 181, 216, 0.4);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: var(--deep-navy);
+            border: 2px solid var(--medium-grey);
+        }
+
+        .btn-secondary:hover {
+            border-color: var(--cyan);
+            color: var(--cyan);
+            transform: translateY(-3px);
+        }
+
+        #hero-canvas {
+            position: absolute;
+            right: 0;
+            top: 0;
+            width: 55%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        .canvas-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at 70% 50%, transparent 30%, rgba(248, 249, 250, 0.7) 70%);
+            z-index: 2;
+            pointer-events: none;
+        }
+
+        /* Dashboard Sections */
+        .dashboard-section {
+            padding: 6rem 5%;
+        }
+
+        .section-title {
+            font-size: 2.8rem;
+            font-weight: 800;
+            margin-bottom: 1rem;
+            color: var(--deep-navy);
+            text-align: center;
+        }
+
+        .section-subtitle {
+            text-align: center;
+            color: var(--dark-grey);
+            margin-bottom: 3rem;
+            font-size: 1.1rem;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .title-accent {
+            background: linear-gradient(135deg, var(--cyan), var(--teal));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        /* Visualizations Grid */
+        .visualizations-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+            gap: 2.5rem;
+            margin-top: 3rem;
+        }
+
+        .viz-card {
+            background: var(--white);
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border: 1px solid rgba(226, 232, 240, 0.8);
+            height: 100%;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .viz-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 5px;
+            background: linear-gradient(90deg, var(--cyan), var(--teal));
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform 0.4s ease;
+        }
+
+        .viz-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .viz-card:hover {
+            transform: translateY(-15px) scale(1.02);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12);
+        }
+
+        .viz-card.line-chart {
+            border-left: 5px solid var(--graph-1);
+        }
+
+        .viz-card.bar-chart {
+            border-left: 5px solid var(--graph-2);
+        }
+
+        .viz-card.pie-chart {
+            border-left: 5px solid var(--graph-3);
+        }
+
+        .viz-card.scatter-plot {
+            border-left: 5px solid var(--graph-4);
+        }
+
+        .viz-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .viz-title {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--deep-navy);
+        }
+
+        .viz-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.3rem;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .line-chart .viz-icon {
+            background: linear-gradient(135deg, var(--graph-1), #5a9cf5);
+        }
+
+        .bar-chart .viz-icon {
+            background: linear-gradient(135deg, var(--graph-2), #48BB78);
+        }
+
+        .pie-chart .viz-icon {
+            background: linear-gradient(135deg, var(--graph-3), #ED8936);
+        }
+
+        .scatter-plot .viz-icon {
+            background: linear-gradient(135deg, var(--graph-4), #9F7AEA);
+        }
+
+        .chart-container {
+            height: 280px;
+            width: 100%;
+            position: relative;
+        }
+
+        /* Interactive Controls */
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin: 3rem 0;
+        }
+
+        .control-btn {
+            padding: 0.8rem 1.5rem;
+            background: var(--white);
+            border: 2px solid var(--light-grey);
+            border-radius: 30px;
+            color: var(--slate-blue);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .control-btn:hover {
+            border-color: var(--cyan);
+            color: var(--cyan);
+            transform: translateY(-2px);
+        }
+
+        .control-btn.active {
+            background: linear-gradient(135deg, var(--cyan), var(--teal));
+            color: white;
+            border-color: transparent;
+        }
+
+        /* Footer */
+        footer {
+            background: linear-gradient(135deg, var(--deep-navy), #0f2546);
+            color: white;
+            padding: 5rem 5% 2rem;
+            margin-top: 5rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        footer::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 5px;
+            background: linear-gradient(90deg, var(--cyan), var(--teal));
+        }
+
+        .footer-content {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 4rem;
+            margin-bottom: 3rem;
+            position: relative;
+            z-index: 2;
+        }
+
+        .footer-section h3 {
+            font-size: 1.4rem;
+            margin-bottom: 1.5rem;
+            color: var(--cyan);
+            font-weight: 700;
+        }
+
+        .footer-section p, .footer-section a {
+            color: var(--light-grey);
+            margin-bottom: 1rem;
+            display: block;
+            text-decoration: none;
+            transition: all 0.3s;
+        }
+
+        .footer-section a:hover {
+            color: var(--cyan);
+            transform: translateX(5px);
+        }
+
+        .copyright {
+            text-align: center;
+            padding-top: 3rem;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            color: var(--medium-grey);
+            font-size: 0.9rem;
+            position: relative;
+            z-index: 2;
+        }
+
+        /* Floating particles in footer */
+        .footer-particles {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .hero-title {
+                font-size: 3.2rem;
+            }
+            
+            #hero-canvas {
+                width: 50%;
+            }
+        }
+
+        @media (max-width: 992px) {
+            .hero-section {
+                flex-direction: column;
+                height: auto;
+                padding-top: 4rem;
+                padding-bottom: 4rem;
+                text-align: center;
+            }
+            
+            .hero-content {
+                margin-bottom: 3rem;
+            }
+            
+            #hero-canvas {
+                position: relative;
+                width: 100%;
+                height: 400px;
+            }
+            
+            .hero-stats {
+                justify-content: center;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
+            }
+            
+            .hero-title {
+                font-size: 2.8rem;
+            }
+            
+            .section-title {
+                font-size: 2.3rem;
+            }
+            
+            .visualizations-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .hero-stats {
+                flex-direction: column;
+                gap: 1.5rem;
+            }
+            
+            .btn {
+                padding: 0.9rem 2rem;
+            }
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 10px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--light-grey);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(var(--cyan), var(--teal));
+            border-radius: 5px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(var(--teal), var(--cyan));
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav>
+        <div class="logo">
+            <i class="fas fa-globe-americas"></i>
+            Climate Dynamics
+        </div>
+        <div class="nav-links">
+            <a href="#" class="active">Home</a>
+            <a href="#">Visualizations</a>
+            <a href="#">Data Streams</a>
+            <a href="#">Research</a>
+            <a href="#">About</a>
+        </div>
+        <a href="#" class="github-btn">
+            <i class="fab fa-github"></i>
+            Source Code
+        </a>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero-section">
+        <div class="hero-content">
+            <h1 class="hero-title">Climate Dynamics<br>Visualization Engine</h1>
+            <p class="hero-subtitle">
+                Experience real-time climate data through interactive 3D simulations. 
+                Watch temperature anomalies, CO₂ concentrations, and atmospheric patterns 
+                evolve in a dynamic particle system.
+            </p>
+            
+            <div class="hero-stats">
+                <div class="stat-item">
+                    <div class="stat-value" id="tempValue">+1.2°C</div>
+                    <div class="stat-label">Global Warming</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="co2Value">420 ppm</div>
+                    <div class="stat-label">CO₂ Level</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="iceValue">-28T</div>
+                    <div class="stat-label">Ice Mass Loss</div>
+                </div>
+            </div>
+            
+            <div class="hero-cta">
+                <a href="#" class="btn btn-primary">
+                    <i class="fas fa-play-circle"></i>
+                    Launch Simulation
+                </a>
+                <a href="#" class="btn btn-secondary">
+                    <i class="fas fa-database"></i>
+                    Data Repository
+                </a>
+            </div>
+        </div>
+        <canvas id="hero-canvas"></canvas>
+        <div class="canvas-overlay"></div>
+    </section>
+
+    <!-- Controls -->
+    <div class="controls">
+        <button class="control-btn active" data-mode="temperature">Temperature</button>
+        <button class="control-btn" data-mode="co2">CO₂ Emissions</button>
+        <button class="control-btn" data-mode="ocean">Ocean Currents</button>
+        <button class="control-btn" data-mode="atmosphere">Atmosphere</button>
+    </div>
+
+    <!-- Visualizations Section -->
+    <section class="dashboard-section">
+        <h2 class="section-title">Data <span class="title-accent">Visualizations</span></h2>
+        <p class="section-subtitle">Interactive charts showing climate trends from 1900 to present with projections to 2100</p>
+        
+        <div class="visualizations-grid">
+            <!-- Temperature Trend -->
+            <div class="viz-card line-chart">
+                <div class="viz-header">
+                    <h3 class="viz-title">Temperature Anomaly Timeline</h3>
+                    <div class="viz-icon">
+                        <i class="fas fa-fire"></i>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="temperatureChart"></canvas>
+                </div>
+            </div>
+
+            <!-- CO2 Emissions -->
+            <div class="viz-card bar-chart">
+                <div class="viz-header">
+                    <h3 class="viz-title">Carbon Emission Sources</h3>
+                    <div class="viz-icon">
+                        <i class="fas fa-smog"></i>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="co2Chart"></canvas>
+                </div>
+            </div>
+
+            <!-- Energy Sources -->
+            <div class="viz-card pie-chart">
+                <div class="viz-header">
+                    <h3 class="viz-title">Global Energy Mix 2023</h3>
+                    <div class="viz-icon">
+                        <i class="fas fa-bolt"></i>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="energyChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Sea Level Rise -->
+            <div class="viz-card scatter-plot">
+                <div class="viz-header">
+                    <h3 class="viz-title">Sea Level Projections</h3>
+                    <div class="viz-icon">
+                        <i class="fas fa-water"></i>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="seaLevelChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-content">
+            <div class="footer-section">
+                <h3>Climate Dynamics</h3>
+                <p>Advanced visualization platform for understanding complex climate systems through interactive 3D simulations and real-time data analysis.</p>
+            </div>
+            <div class="footer-section">
+                <h3>Data Sources</h3>
+                <a href="#">NASA Climate Data</a>
+                <a href="#">NOAA Satellite</a>
+                <a href="#">IPCC Reports</a>
+                <a href="#">Copernicus Program</a>
+            </div>
+            <div class="footer-section">
+                <h3>Research Tools</h3>
+                <a href="#">API Documentation</a>
+                <a href="#">Data Download</a>
+                <a href="#">Visualization Tools</a>
+                <a href="#">Academic Access</a>
+            </div>
+            <div class="footer-section">
+                <h3>Contact</h3>
+                <a href="#"><i class="fas fa-envelope"></i> research@climatedynamics.org</a>
+                <a href="#"><i class="fas fa-phone"></i> +1 (555) 987-6543</a>
+                <a href="#"><i class="fas fa-map-marker-alt"></i> Climate Research Center</a>
+            </div>
+        </div>
+        <canvas class="footer-particles" id="footer-canvas"></canvas>
+        <div class="copyright">
+            <p>&copy; 2023 Climate Dynamics Visualization Engine. Scientific visualization platform for climate research.</p>
+        </div>
+    </footer>
+
+    <script>
+    // Advanced 3D Climate Particle System
+    class ClimateParticleSystem {
+        constructor() {
+            this.canvas = document.getElementById('hero-canvas');
+            this.scene = new THREE.Scene();
+            this.camera = new THREE.PerspectiveCamera(60, this.canvas.clientWidth / this.canvas.clientHeight, 0.1, 2000);
+            this.renderer = new THREE.WebGLRenderer({ 
+                canvas: this.canvas, 
+                alpha: true, 
+                antialias: true,
+                powerPreference: "high-performance"
+            });
+            
+            this.renderer.setSize(this.canvas.clientWidth, this.canvas.clientHeight);
+            this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            this.renderer.shadowMap.enabled = true;
+            this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            
+            this.particles = [];
+            this.dataPoints = [];
+            this.currentMode = 'temperature';
+            this.time = 0;
+            
+            this.init();
+            this.animate();
+        }
+        
+        init() {
+            // Create climate data structure
+            this.createDataStructure();
+            
+            // Add lighting
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+            this.scene.add(ambientLight);
+            
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            directionalLight.position.set(5, 10, 7);
+            directionalLight.castShadow = true;
+            this.scene.add(directionalLight);
+            
+            // Add hemisphere light for natural outdoor feel
+            const hemisphereLight = new THREE.HemisphereLight(0x4d96ff, 0x38b2ac, 0.6);
+            this.scene.add(hemisphereLight);
+            
+            // Create central data sphere
+            this.createDataSphere();
+            
+            // Create floating islands representing continents
+            this.createContinents();
+            
+            // Create atmosphere layers
+            this.createAtmosphere();
+            
+            // Create particle streams
+            this.createParticleStreams();
+            
+            // Create temperature gradient visualization
+            this.createTemperatureGradient();
+            
+            // Position camera
+            this.camera.position.set(0, 5, 15);
+            
+            // Add orbital controls for interactivity
+            this.setupControls();
+            
+            // Handle window resize
+            window.addEventListener('resize', () => this.onWindowResize());
+            
+            // Handle control button clicks
+            document.querySelectorAll('.control-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const mode = e.target.dataset.mode;
+                    this.setVisualizationMode(mode);
+                    document.querySelectorAll('.control-btn').forEach(b => b.classList.remove('active'));
+                    e.target.classList.add('active');
+                });
+            });
+        }
+        
+        createDataStructure() {
+            // Create a 3D grid structure for data points
+            const geometry = new THREE.BoxGeometry(0.3, 0.3, 0.3);
+            
+            for (let i = 0; i < 100; i++) {
+                const material = new THREE.MeshPhongMaterial({
+                    color: new THREE.Color().setHSL(Math.random() * 0.3 + 0.5, 0.8, 0.6),
+                    emissive: new THREE.Color().setHSL(Math.random() * 0.1 + 0.1, 0.5, 0.2),
+                    shininess: 100
+                });
+                
+                const cube = new THREE.Mesh(geometry, material);
+                
+                // Position in a spherical pattern
+                const radius = 5 + Math.random() * 3;
+                const theta = Math.random() * Math.PI * 2;
+                const phi = Math.random() * Math.PI;
+                
+                cube.position.x = radius * Math.sin(phi) * Math.cos(theta);
+                cube.position.y = radius * Math.cos(phi);
+                cube.position.z = radius * Math.sin(phi) * Math.sin(theta);
+                
+                cube.originalPosition = cube.position.clone();
+                cube.speed = 0.01 + Math.random() * 0.02;
+                cube.phase = Math.random() * Math.PI * 2;
+                
+                this.scene.add(cube);
+                this.dataPoints.push(cube);
+            }
+        }
+        
+        createDataSphere() {
+            // Main data visualization sphere
+            const sphereGeometry = new THREE.SphereGeometry(4, 32, 32);
+            const sphereMaterial = new THREE.MeshPhongMaterial({
+                color: 0x1A365D,
+                transparent: true,
+                opacity: 0.3,
+                wireframe: true,
+                emissive: 0x00B5D8,
+                emissiveIntensity: 0.2
+            });
+            
+            this.dataSphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
+            this.scene.add(this.dataSphere);
+            
+            // Inner glowing core
+            const coreGeometry = new THREE.SphereGeometry(1.5, 16, 16);
+            const coreMaterial = new THREE.MeshBasicMaterial({
+                color: 0x00B5D8,
+                transparent: true,
+                opacity: 0.3
+            });
+            
+            this.core = new THREE.Mesh(coreGeometry, coreMaterial);
+            this.scene.add(this.core);
+        }
+        
+        createContinents() {
+            // Create floating land masses
+            const continentGeometry = new THREE.IcosahedronGeometry(1.2, 1);
+            
+            const positions = [
+                { x: -6, y: -1, z: -3, color: 0x38A169 }, // Americas
+                { x: 7, y: 0, z: -2, color: 0x3182CE },   // Asia
+                { x: -2, y: 2, z: 6, color: 0xD69E2E },    // Europe
+                { x: 4, y: -2, z: 5, color: 0x805AD5 }     // Australia
+            ];
+            
+            positions.forEach(pos => {
+                const material = new THREE.MeshPhongMaterial({
+                    color: pos.color,
+                    shininess: 30,
+                    flatShading: true
+                });
+                
+                const continent = new THREE.Mesh(continentGeometry, material);
+                continent.position.set(pos.x, pos.y, pos.z);
+                continent.rotation.set(
+                    Math.random() * Math.PI,
+                    Math.random() * Math.PI,
+                    Math.random() * Math.PI
+                );
+                
+                this.scene.add(continent);
+                this.particles.push({
+                    mesh: continent,
+                    speed: 0.002 + Math.random() * 0.003,
+                    rotation: new THREE.Vector3(
+                        Math.random() * 0.01,
+                        Math.random() * 0.01,
+                        Math.random() * 0.01
+                    )
+                });
+            });
+        }
+        
+        createAtmosphere() {
+            // Create layered atmosphere
+            const layers = [
+                { radius: 6, color: 0x4D96FF, opacity: 0.1 },
+                { radius: 7, color: 0x00B5D8, opacity: 0.08 },
+                { radius: 8, color: 0x90E0EF, opacity: 0.05 }
+            ];
+            
+            layers.forEach(layer => {
+                const geometry = new THREE.SphereGeometry(layer.radius, 32, 32);
+                const material = new THREE.MeshBasicMaterial({
+                    color: layer.color,
+                    transparent: true,
+                    opacity: layer.opacity,
+                    side: THREE.BackSide
+                });
+                
+                const atmosphereLayer = new THREE.Mesh(geometry, material);
+                this.scene.add(atmosphereLayer);
+            });
+        }
+        
+        createParticleStreams() {
+            // Create flowing particle streams representing data flow
+            const particleCount = 500;
+            const positions = new Float32Array(particleCount * 3);
+            const colors = new Float32Array(particleCount * 3);
+            
+            for (let i = 0; i < particleCount * 3; i += 3) {
+                // Position particles along spiral paths
+                const t = (i / 3) / particleCount * Math.PI * 4;
+                const radius = 5 + Math.sin(t * 2) * 2;
+                
+                positions[i] = radius * Math.sin(t);
+                positions[i + 1] = Math.cos(t * 3) * 2;
+                positions[i + 2] = radius * Math.cos(t);
+                
+                // Color based on position (temperature gradient)
+                const hue = 0.6 + (positions[i + 1] / 4) * 0.3;
+                const color = new THREE.Color().setHSL(hue, 0.8, 0.6);
+                
+                colors[i] = color.r;
+                colors[i + 1] = color.g;
+                colors[i + 2] = color.b;
+            }
+            
+            const geometry = new THREE.BufferGeometry();
+            geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+            
+            const material = new THREE.PointsMaterial({
+                size: 0.1,
+                vertexColors: true,
+                transparent: true,
+                opacity: 0.7
+            });
+            
+            this.particleStream = new THREE.Points(geometry, material);
+            this.scene.add(this.particleStream);
+        }
+        
+        createTemperatureGradient() {
+            // Create a temperature gradient visualization
+            const gradientGeometry = new THREE.CylinderGeometry(0.5, 0.5, 8, 32);
+            const gradientMaterial = new THREE.ShaderMaterial({
+                uniforms: {
+                    time: { value: 0 }
+                },
+                vertexShader: `
+                    varying vec3 vPosition;
+                    void main() {
+                        vPosition = position;
+                        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                    }
+                `,
+                fragmentShader: `
+                    uniform float time;
+                    varying vec3 vPosition;
+                    
+                    void main() {
+                        float height = (vPosition.y + 4.0) / 8.0;
+                        vec3 coolColor = vec3(0.3, 0.6, 1.0);
+                        vec3 warmColor = vec3(1.0, 0.4, 0.3);
+                        vec3 color = mix(coolColor, warmColor, height + sin(time * 0.001 + vPosition.x) * 0.1);
+                        float alpha = 0.3 + sin(time * 0.002 + vPosition.y * 2.0) * 0.1;
+                        gl_FragColor = vec4(color, alpha);
+                    }
+                `,
+                transparent: true,
+                side: THREE.DoubleSide
+            });
+            
+            this.temperatureGradient = new THREE.Mesh(gradientGeometry, gradientMaterial);
+            this.temperatureGradient.position.set(10, 0, 0);
+            this.scene.add(this.temperatureGradient);
+        }
+        
+        setupControls() {
+            // Mouse interaction
+            let mouseX = 0;
+            let mouseY = 0;
+            
+            document.addEventListener('mousemove', (e) => {
+                mouseX = (e.clientX / window.innerWidth) * 2 - 1;
+                mouseY = -(e.clientY / window.innerHeight) * 2 + 1;
+            });
+            
+            // Update camera position based on mouse
+            this.updateCamera = (deltaTime) => {
+                const targetX = mouseX * 2;
+                const targetY = mouseY * 2;
+                
+                this.camera.position.x += (targetX - this.camera.position.x) * 0.05;
+                this.camera.position.y += (targetY - this.camera.position.y) * 0.05;
+                
+                this.camera.lookAt(this.scene.position);
+            };
+        }
+        
+        setVisualizationMode(mode) {
+            this.currentMode = mode;
+            
+            // Update UI based on mode
+            const stats = {
+                temperature: { temp: '+1.5°C', co2: '415 ppm', ice: '-30T' },
+                co2: { temp: '+1.3°C', co2: '425 ppm', ice: '-28T' },
+                ocean: { temp: '+1.1°C', co2: '410 ppm', ice: '-25T' },
+                atmosphere: { temp: '+1.4°C', co2: '418 ppm', ice: '-27T' }
+            };
+            
+            if (stats[mode]) {
+                document.getElementById('tempValue').textContent = stats[mode].temp;
+                document.getElementById('co2Value').textContent = stats[mode].co2;
+                document.getElementById('iceValue').textContent = stats[mode].ice;
+            }
+        }
+        
+        animate() {
+            requestAnimationFrame(() => this.animate());
+            this.time += 0.016; // Assuming 60fps
+            
+            // Update data points
+            this.dataPoints.forEach(point => {
+                const time = this.time * point.speed + point.phase;
+                point.position.y = point.originalPosition.y + Math.sin(time) * 0.5;
+                point.rotation.x += 0.01;
+                point.rotation.y += 0.01;
+            });
+            
+            // Update continents
+            this.particles.forEach(particle => {
+                particle.mesh.rotation.x += particle.rotation.x;
+                particle.mesh.rotation.y += particle.rotation.y;
+                particle.mesh.rotation.z += particle.rotation.z;
+                
+                // Gentle floating motion
+                particle.mesh.position.y += Math.sin(this.time * particle.speed) * 0.005;
+            });
+            
+            // Rotate data sphere
+            this.dataSphere.rotation.y += 0.002;
+            this.core.rotation.y -= 0.003;
+            
+            // Update particle stream
+            if (this.particleStream) {
+                const positions = this.particleStream.geometry.attributes.position.array;
+                for (let i = 0; i < positions.length; i += 3) {
+                    // Create flowing motion
+                    positions[i + 1] += Math.sin(this.time * 0.001 + i * 0.01) * 0.02;
+                }
+                this.particleStream.geometry.attributes.position.needsUpdate = true;
+                this.particleStream.rotation.y += 0.001;
+            }
+            
+            // Update temperature gradient shader
+            if (this.temperatureGradient && this.temperatureGradient.material.uniforms.time) {
+                this.temperatureGradient.material.uniforms.time.value = this.time;
+            }
+            
+            // Update camera based on mouse
+            if (this.updateCamera) {
+                this.updateCamera(0.016);
+            }
+            
+            this.renderer.render(this.scene, this.camera);
+        }
+        
+        onWindowResize() {
+            this.camera.aspect = this.canvas.clientWidth / this.canvas.clientHeight;
+            this.camera.updateProjectionMatrix();
+            this.renderer.setSize(this.canvas.clientWidth, this.canvas.clientHeight);
+        }
+    }
+
+    // Initialize Charts
+    function initCharts() {
+        // Temperature Trend Chart with gradient
+        const tempCtx = document.getElementById('temperatureChart').getContext('2d');
+        const tempGradient = tempCtx.createLinearGradient(0, 0, 0, 400);
+        tempGradient.addColorStop(0, 'rgba(49, 130, 206, 0.8)');
+        tempGradient.addColorStop(1, 'rgba(49, 130, 206, 0.1)');
+        
+        new Chart(tempCtx, {
+            type: 'line',
+            data: {
+                labels: ['1900', '1920', '1940', '1960', '1980', '2000', '2020', '2040', '2060', '2080', '2100'],
+                datasets: [{
+                    label: 'Temperature Anomaly (°C)',
+                    data: [-0.3, -0.1, 0.1, 0.2, 0.4, 0.8, 1.2, 1.8, 2.3, 2.8, 3.2],
+                    borderColor: 'var(--graph-1)',
+                    backgroundColor: tempGradient,
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.4,
+                    pointBackgroundColor: 'white',
+                    pointBorderColor: 'var(--graph-1)',
+                    pointBorderWidth: 2,
+                    pointRadius: 4,
+                    pointHoverRadius: 8
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: 'rgba(26, 54, 93, 0.9)',
+                        titleColor: 'white',
+                        bodyColor: 'white',
+                        borderColor: 'var(--cyan)',
+                        borderWidth: 1
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: false,
+                        grid: { 
+                            color: 'rgba(0,0,0,0.05)',
+                            drawBorder: false
+                        },
+                        ticks: {
+                            callback: function(value) {
+                                return value + '°C';
+                            }
+                        }
+                    },
+                    x: {
+                        grid: { 
+                            color: 'rgba(0,0,0,0.05)',
+                            drawBorder: false
+                        }
+                    }
+                }
+            }
+        });
+
+        // CO2 Emissions Chart
+        const co2Ctx = document.getElementById('co2Chart').getContext('2d');
+        new Chart(co2Ctx, {
+            type: 'bar',
+            data: {
+                labels: ['Energy', 'Transport', 'Industry', 'Agriculture', 'Buildings', 'Other'],
+                datasets: [{
+                    label: 'CO₂ Emissions (Gt)',
+                    data: [15.8, 8.2, 6.4, 5.8, 3.2, 2.1],
+                    backgroundColor: [
+                        'var(--graph-2)',
+                        '#48BB78',
+                        '#38A169',
+                        '#2F855A',
+                        '#276749',
+                        '#22543D'
+                    ],
+                    borderColor: 'white',
+                    borderWidth: 2,
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { 
+                            color: 'rgba(0,0,0,0.05)',
+                            drawBorder: false
+                        },
+                        title: {
+                            display: true,
+                            text: 'Gigatons CO₂'
+                        }
+                    },
+                    x: {
+                        grid: { display: false }
+                    }
+                }
+            }
+        });
+
+        // Energy Sources Chart
+        const energyCtx = document.getElementById('energyChart').getContext('2d');
+        new Chart(energyCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Fossil Fuels', 'Renewables', 'Nuclear', 'Hydro', 'Other'],
+                datasets: [{
+                    data: [64, 12, 10, 14, 2],
+                    backgroundColor: [
+                        'var(--graph-3)',
+                        'var(--graph-2)',
+                        'var(--graph-1)',
+                        'var(--graph-4)',
+                        'var(--dark-grey)'
+                    ],
+                    borderWidth: 3,
+                    borderColor: 'white',
+                    hoverOffset: 20
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '65%',
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            padding: 25,
+                            usePointStyle: true,
+                            pointStyle: 'circle',
+                            font: {
+                                size: 11
+                            }
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return context.label + ': ' + context.parsed + '%';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        // Sea Level Chart with multiple datasets
+        const seaLevelCtx = document.getElementById('seaLevelChart').getContext('2d');
+        new Chart(seaLevelCtx, {
+            type: 'line',
+            data: {
+                labels: ['2000', '2010', '2020', '2030', '2040', '2050', '2060', '2070', '2080', '2090', '2100'],
+                datasets: [
+                    {
+                        label: 'Optimistic',
+                        data: [0, 40, 85, 135, 190, 250, 310, 370, 430, 480, 520],
+                        borderColor: 'var(--graph-1)',
+                        backgroundColor: 'transparent',
+                        borderWidth: 2,
+                        borderDash: [5, 5],
+                        tension: 0.3
+                    },
+                    {
+                        label: 'Current Path',
+                        data: [0, 45, 95, 160, 240, 340, 460, 600, 760, 940, 1140],
+                        borderColor: 'var(--graph-4)',
+                        backgroundColor: 'transparent',
+                        borderWidth: 3,
+                        tension: 0.3
+                    },
+                    {
+                        label: 'Pessimistic',
+                        data: [0, 50, 110, 200, 320, 480, 680, 920, 1200, 1520, 1880],
+                        borderColor: 'var(--temp-hot)',
+                        backgroundColor: 'transparent',
+                        borderWidth: 2,
+                        borderDash: [5, 5],
+                        tension: 0.3
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: {
+                            usePointStyle: true,
+                            padding: 15
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        title: { 
+                            display: true, 
+                            text: 'Sea Level Rise (mm)',
+                            font: { weight: 'bold' }
+                        },
+                        grid: { 
+                            color: 'rgba(0,0,0,0.05)',
+                            drawBorder: false
+                        }
+                    },
+                    x: {
+                        title: { 
+                            display: true, 
+                            text: 'Year',
+                            font: { weight: 'bold' }
+                        },
+                        grid: { 
+                            color: 'rgba(0,0,0,0.05)',
+                            drawBorder: false
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // Simple footer particles
+    function initFooterParticles() {
+        const canvas = document.getElementById('footer-canvas');
+        const ctx = canvas.getContext('2d');
+        
+        canvas.width = canvas.clientWidth;
+        canvas.height = canvas.clientHeight;
+        
+        const particles = [];
+        const particleCount = 50;
+        
+        for (let i = 0; i < particleCount; i++) {
+            particles.push({
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height,
+                size: Math.random() * 2 + 1,
+                speed: Math.random() * 0.5 + 0.2,
+                opacity: Math.random() * 0.3 + 0.1
+            });
+        }
+        
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            particles.forEach(p => {
+                p.y -= p.speed;
+                if (p.y < 0) {
+                    p.y = canvas.height;
+                    p.x = Math.random() * canvas.width;
+                }
+                
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(144, 224, 239, ${p.opacity})`;
+                ctx.fill();
+            });
+            
+            requestAnimationFrame(animate);
+        }
+        
+        animate();
+        
+        window.addEventListener('resize', () => {
+            canvas.width = canvas.clientWidth;
+            canvas.height = canvas.clientHeight;
+        });
+    }
+
+    // ====== SINGLE INITIALIZATION BLOCK ======
+    // Initialize everything when page loads
+    document.addEventListener('DOMContentLoaded', function() {
+        // Start 3D visualization
+        const climateViz = new ClimateParticleSystem();
+        
+        // Initialize charts
+        initCharts();
+        
+        // Initialize footer particles
+        initFooterParticles();
+        
+        // Smooth scroll
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function(e) {
+                e.preventDefault();
+                const targetId = this.getAttribute('href');
+                if(targetId !== '#') {
+                    const targetElement = document.querySelector(targetId);
+                    if(targetElement) {
+                        window.scrollTo({
+                            top: targetElement.offsetTop - 80,
+                            behavior: 'smooth'
+                        });
+                    }
+                }
+            });
+        });
+        
+        // Navbar scroll effect
+        window.addEventListener('scroll', () => {
+            const nav = document.querySelector('nav');
+            if (window.scrollY > 50) {
+                nav.style.backgroundColor = 'rgba(255, 255, 255, 0.98)';
+                nav.style.boxShadow = '0 5px 25px rgba(26, 54, 93, 0.15)';
+            } else {
+                nav.style.backgroundColor = 'rgba(255, 255, 255, 0.95)';
+                nav.style.boxShadow = '0 2px 20px rgba(26, 54, 93, 0.1)';
+            }
+        });
+    });
+</script>
+</body>
+</html>
